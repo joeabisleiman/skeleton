@@ -49,7 +49,7 @@ public class TagDao {
 
 
     public List<ReceiptsRecord> getAllReceiptsByTag(String tag) {
-        System.out.println(tag);
+       // System.out.println(tag);
         return dsl.select()
                   .from(RECEIPTS)
                   .join(TAGS)

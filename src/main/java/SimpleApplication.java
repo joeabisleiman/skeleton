@@ -1,6 +1,9 @@
-import controllers.HelloWorldController;
 import controllers.ReceiptController;
+
 import controllers.TagController;
+
+import controllers.StaticHtmlController;
+
 import dao.ReceiptDao;
 import dao.TagDao;
 import io.dropwizard.Application;
@@ -8,7 +11,6 @@ import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.h2.jdbcx.JdbcConnectionPool;
-
 import org.jooq.SQLDialect;
 import org.jooq.impl.DefaultConfiguration;
 
@@ -41,9 +43,9 @@ public class SimpleApplication extends Application<Configuration> {
         TagDao tagDao = new TagDao(jooqConfig);
         ReceiptDao receiptDao = new ReceiptDao(jooqConfig);
 
-        // Register all Controllers below.  Don't forget 
+        // Register all Controllers below.  Don't forget
         // you need class and method @Path annotations!
-        env.jersey().register(new HelloWorldController());
+        env.jersey().register(new StaticHtmlController());
         env.jersey().register(new ReceiptController(receiptDao));
         env.jersey().register(new TagController(tagDao));
     }

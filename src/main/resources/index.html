@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title> Receipts </title>
+    <!--    <link rel="stylesheet" href="style.css" /> -->
+
+    <script data-require="jquery@*" data-semver="3.1.1" src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+
+    <style>
+        #container {border: 1px solid brown;}
+        H1 {float: left;}
+
+
+        .button{
+        //            background-color:#55A;
+        //            border: 1px solid #229;
+            width: 100px;
+            float: right;
+            font-size: 2em;
+            color: white;
+            text-align: center;
+        }
+
+        #receiptList {
+            border: 1px solid green;
+            clear: both;
+        }
+
+        .receipt {
+            background-color: #eee;
+            margin-bottom: 5px;
+        }
+
+        .tag_input {
+
+        }
+
+    </style>
+    <script>
+        // This is the idiomatic way to ensure that JQuery does not
+        // execute until the page has loaded
+        const api = "http://ec2-13-59-90-238.us-east-2.compute.amazonaws.com:8080";
+
+        $(document).on('click',".add-tag",function () {
+            $(this).parent().append(`<input class="form-control tag_input" id="test-tag-input"></input>`);
+        })
+
+        $(document).on('click',".tagValue",function () {
+
+            var tagValue = $(this).text();
+            var receipt_ID = $(this).parent().parent().children(".receiptID").text();
+            //console.log("tag: "+tagValue + " Receipt: " + receipt_ID + " gElement is: " + this);
+            $.ajax({
+                url: api + '/tags/' + tagValue,
+                type: 'PUT',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(receipt_ID)
+            });
+            this.remove();
+        })
+
+        $(document).on('keypress',".tag_input",function (k) {
+            if(k.which==13) {
+                var tagValue = $(this).val();
+                var receipt_ID = $(this).parent().parent().children(".receiptID").text();
+                console.log("Test: " + receipt_ID);
+                addNewTag(tagValue, receipt_ID, this);
+            }
+        })
+
+        function updateTagsColumn(tagValue, receipt_ID, element){
+            console.log("Element: " + element);
+            //var body = "<div class='tagValue'>"+ tagValue + "</div>";
+            $("<div class='tagValue'>").html(tagValue).appendTo($(element.parentNode));
+        }
+
+        function addNewTag(tagValue, receipt_ID, element) {
+            updateTagsColumn(tagValue, receipt_ID, element);
+            element.remove(tagValue, receipt_ID, element);
+            $.ajax({
+                url: api + '/tags/' + tagValue,
+                type: 'PUT',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(receipt_ID)
+            });
+        }
+
+        $(function(){
+
+            $.getJSON(api+"/receipts", function(receipts){
+                console.log(receipts);
+                for(var i=0; i < receipts.length; i++) {
+                    var receipt = receipts[i];
+                    var body =
+                        "<td>"+receipt.created+"</td>" +
+                        "<td class='merchant'>"+receipt.merchantName+"</td>" +
+                        "<td class='amount'>"+receipt.value+"</td>" +
+                        "<td class=''><button type=\'button\' class='add-tag'>Add Tag</button><br/>";
+                    if(receipt.tags != null){
+                        for(var j = 0; j < receipt.tags.length; j++) {
+                            body = body + "<div class='tagValue'>"+ receipt.tags[j] + "</div>";
+                        } }
+                    body = body +"<br/></td><td class='receiptID' id='receiptID'>"+receipt.id+"</td></tr>";
+                    $("<tr class='receipt'>").html(body).appendTo($(".table tbody"));
+
+                }
+            })
+        })
+
+
+        function reset() {
+            $('collapseExample').trigger('reset');
+        }
+
+
+        function updateReceiptsTable(receiptID) {
+            console.log("Update Called on:" + receiptID);
+            var date = new Date();
+            var formattedDate = date.getHours()+ ":" + date.getMinutes() + ":" + date.getSeconds();
+            var newReceipt =
+                "<td>"+formattedDate+"</td>" +
+                "<td class='merchant'>"+$("#merchant").val()+"</td>" +
+                "<td class='amount'>"+$("#amount").val()+"</td>" +
+                "<td class='tags'><button type='button' class='add-tag'>Add Tag</button><br/></td>" +
+                "<td class='receiptID id='receiptID'>"+receiptID+"</td>";
+            $("<tr class='receipt'>").html(newReceipt).appendTo($(".table tbody"));
+        }
+
+
+        function addReceipt() {
+
+            var requestData = {
+                merchant: $("#merchant").val(),
+                amount: $("#amount").val()
+            }
+
+            $.ajax({
+                url: api + '/receipts',
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(requestData),
+                success: function(receiptID) {
+                    updateReceiptsTable(receiptID);
+                    $('#merchant').val('');
+                    $('#amount').val('');
+                }
+            });
+        }
+
+
+
+
+    </script>
+
+
+</head>
+
+<body>
+<DIV id="container">
+    <h1 style="font-family:Garamond">My Receipts</h1>
+</DIV>
+<div class="button"><button id="add-receipt" type="button" class="btn btn-primary" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">Add</button></div>
+<div class="button"><button id="start-camera" type="button" class="btn btn-primary" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample" >Camera</button></div>
+<br/><br/>
+<form class="collapse" id="collapseExample">
+    <div class="card card-body">
+        <div class="input-group">
+            <input type="text" id="merchant" required="true" class="form-control" placeholder="merchant" aria-label="merchant" aria-describedby="basic-addon1">
+        </div>
+        <div class="input-group">
+            <span class="input-group-addon">$</span>
+            <input type="number" id="amount" class="form-control" placeholder="amount" aria-label="Amount (to the nearest dollar)">
+        </div>
+        <br/>
+        <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2" role="group" aria-label="First group">
+                <button type="button" id="cancel-receipt" class="btn btn-danger" onclick="reset()" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">Cancel</button>
+
+            </div>
+            <div class="input-group">
+                <button type="button" id="save-receipt" class="btn btn-success" onclick="addReceipt()">Save</button>
+            </div>
+        </div>
+
+
+    </div>
+
+</form>
+</div>
+<div id="receiptList">
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Merchant</th>
+            <th>$</th>
+            <th>Tags</th>
+            <th>ID</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+</DIV>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+</body>
+
+</html>
